@@ -35,14 +35,6 @@ struct Instructie
     }
 };
 
-void increase(int& dial) {
-    dial++;
-}
-
-void decrease(int& dial) {
-    dial--;
-}
-
 class Kluis
 {
     int dial = 50;
@@ -52,31 +44,22 @@ public:
     {
         int count = 0;
 
-        std::function<void(int&)> operation;
-        if (instructie.richting == Richting::Links)
-        {
-            operation = decrease;
-        }
-        if (instructie.richting == Richting::Rechts)
-        {
-            operation = increase;
-        }
         for (int i = 0; i < instructie.stapjes; i++)
         {
-            operation(dial);
-            if (dial > 99)
-            {
-                dial = 0;
-            }
-            if (dial < 0)
-            {
-                dial = 99;
-            }
-            if (dial ==0){
-                count++;
+            if (instructie.richting == Richting::Links)
+                dial--;
+            else
+                dial++;
 
-            }
+            if (dial > 99)
+                dial = 0;
+            if (dial < 0)
+                dial = 99;
+
+            if (dial == 0)
+                count++;
         }
+
         return count;
     }
 };
@@ -85,32 +68,26 @@ int turnen(const instructies &instructies)
 {
     int base = 100;
     int dial = 50;
-    int step;
     int up = 0;
-    char L = 'L';
-    char R = 'R';
 
     for (int i = 0; i < instructies.size(); i++)
     {
-        std::cout << dial << "," << instructies[i] << std::endl;
-        if (instructies[i][0] == R)
+        //std::cout << dial << "," << instructies[i] << std::endl;
+        int step = std::stoi(instructies[i].substr(1));
+        if (instructies[i][0] == 'R')
         {
-            step = std::stoi(instructies[i].substr(1));
-            dial = (dial + step) % base;
+            dial += step;
         }
-        else if (instructies[i][0] == L)
+        else if (instructies[i][0] == 'L')
         {
-            step = std::stoi(instructies[i].substr(1));
-            dial = (dial - step) % base;
+            dial -= step;
         }
         else
         {
             assert(false);
         }
-        if (dial < 0)
-        {
-            dial = 100 + dial;
-        }
+        // normalization
+        dial = ((dial % base) + base) % base;
         if (dial > 99)
         {
             assert(false);
@@ -124,21 +101,19 @@ int turnen(const instructies &instructies)
     return up;
 }
 
-instructies input(std::string filename)
+instructies input(const std::string& filename)
 {
+    std::ifstream in(filename + ".txt");
+    assert(in && "Could not open input file");
 
-    std::ifstream file(filename + ".txt");
     instructies turns;
+    std::string turn;
 
-    if (std::ifstream in{filename + ".txt"})
+    while (in >> turn)
     {
-        std::string turn;
-        while (in >> turn)
-        {
-            turns.push_back(turn);
-            std::cout << turn << std::endl;
-        }
+        turns.push_back(turn);
     }
+
     return turns;
 }
 
@@ -159,8 +134,9 @@ int main()
 
     // Print
     auto instructies = input("input");
+    std::cout << "Read " << instructies.size() << " instructions\n";
     int answer = turnen(instructies);
-    std::cout << "Number of zerooooos: " << answer << "\n";
+    std::cout << "Number of zeros: " << answer << "\n";
 
     int answerdeel2 = doedeel2(instructies);
     std::cout << answerdeel2 << " keer langs 0 gekomen" << std::endl;
