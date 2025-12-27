@@ -5,11 +5,13 @@
 #include <numeric>
 #include <cassert>
 #include <functional>
+#include <filesystem>
 
 using instructies = std::vector<std::string>;
 
-instructies input(const std::string& filename)
+instructies input(const std::string &filename)
 {
+    std::cout << std::filesystem::current_path() << '\n';
     std::ifstream in(filename + ".txt");
     assert(in && "Could not open input file");
 
@@ -28,7 +30,7 @@ int main()
 {
 
     // Print
-    auto instructies = input("input");
+    auto instructies = input("input/input");
     std::cout << "Read " << instructies.size() << " instructions\n";
 
     for (const auto &s : instructies)

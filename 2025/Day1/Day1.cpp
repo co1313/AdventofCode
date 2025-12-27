@@ -133,7 +133,7 @@ int main()
 {
 
     // Print
-    auto instructies = input("input");
+    auto instructies = input("input/input");
     std::cout << "Read " << instructies.size() << " instructions\n";
     int answer = turnen(instructies);
     std::cout << "Number of zeros: " << answer << "\n";
