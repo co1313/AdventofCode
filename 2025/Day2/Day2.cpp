@@ -8,113 +8,89 @@
 #include <filesystem>
 #include <cmath>
 
-using stringvector = std::vector<std::string>;
-using intvector = std::vector<std::int64_t>;
+using Strings = std::vector<std::string>;
+using Longs = std::vector<long>;
 
-stringvector input(const std::string &filename)
+Strings read_input(const std::string &filename)
 {
-    std::cout << std::filesystem::current_path() << '\n';
     std::ifstream in(filename + ".txt");
     assert(in && "Could not open input file");
 
-    stringvector ranges;
-    std::string token;
-
-    while (std::getline(in, token, ','))
-    {
-        ranges.push_back(token);
-    }
+    Strings ranges;
+    for (std::string s; std::getline(in, s, ',');)
+        ranges.push_back(s);
 
     return ranges;
 }
 
-intvector numbers(const stringvector &ranges)
+Longs numbers(const Strings &ranges)
 {
-    intvector IDs;
+    Longs IDs;
 
-    for (size_t i = 0; i < ranges.size(); i++)
+    for (const auto &s : ranges)
     {
-        const std::string &s = ranges[i];
-
         auto dashPos = s.find('-');
         if (dashPos == std::string::npos)
             continue;
 
-        std::int64_t begin = std::stoll(s.substr(0, dashPos));
-        std::int64_t end = std::stoll(s.substr(dashPos + 1));
+        long begin = std::stol(s.substr(0, dashPos));
+        long end = std::stol(s.substr(dashPos + 1));
 
-        intvector IDrange(end - begin + 1);
-        std::iota(IDrange.begin(), IDrange.end(), begin);
-
-        IDs.insert(IDs.end(), IDrange.begin(), IDrange.end());
+        for (long i = begin; i <= end; ++i)
+            IDs.push_back(i);
     }
     return IDs;
 }
 
-std::int64_t part1(const intvector &IDs)
+long part1(const Longs &IDs)
 {
-    std::int64_t IDsum = 0;
+    long IDsum = 0;
     for (size_t i = 0; i < IDs.size(); i++)
     {
         int digits = std::to_string(IDs[i]).length();
 
-        if (digits % 2 == 0 and IDs[i] % (int64_t)(std::pow(10, digits / 2) + 1) == 0)
+        if (digits % 2 == 0 and IDs[i] % (long)(std::pow(10, digits / 2) + 1) == 0)
             IDsum += IDs[i];
     }
     return IDsum;
 }
 
-intvector primeFac(int n)
+Longs divisors(int n)
 {
-    intvector res;
+    Longs res;
 
-    // Check for factor 2
-    if (n % 2 == 0)
-    {
-        res.push_back(2);
-        while (n % 2 == 0)
-            n /= 2;
-    }
-
-    // Check for odd prime factors
-    for (int i = 3; i <= sqrt(n); i += 2)
-    {
+    for (int i = 2; i <= n; i++)
         if (n % i == 0)
-        {
             res.push_back(i);
-            while (n % i == 0)
-                n /= i;
-        }
-    }
-
-    // If remaining n is a prime number > 2
-    if (n > 2)
-        res.push_back(n);
-
     return res;
 }
-std::int64_t zeroinserter(int digits, int factor)
+long make_divisor(int digits, long factor)
 {
-    int divisor = 1;
-    int insertnumber = digits / factor - 1;
-    for (int i = 1; i < factor; i++)
-        int divisor += std::pow(10, i + insertnumber);
+    long divisor = 0;
+    int step = digits / factor;
+
+    for (int i = 0; i < factor; i++)
+        divisor += static_cast<long>(std::pow(10, i * step));
+
     return divisor;
 }
 
-std::int64_t part2(const intvector &IDs)
+long part2(const Longs &IDs)
 {
-    std::int64_t IDsum = 0;
-    for (size_t i = 0; i < IDs.size(); i++)
+    long IDsum = 0;
+    for (long ID : IDs)
     {
-        int digits = std::to_string(IDs[i]).length();
-        intvector factors = primeFac(digits);
+        int digits = std::to_string(ID).length();
 
-        for (size_t j = 0; j < factors.size(); j++)
-            if (digits % factors[j] == 0)
-
-                if (IDs[i] % (int64_t)(std::pow(10, digits / factors[j]) + 1) == 0)
-                    IDsum += IDs[i];
+        for (long factor : divisors(digits))
+        {
+            if (ID % make_divisor(digits, factor) == 0)
+            {
+                IDsum += ID;
+                // std::cout << "counted ID:" << IDs[i] << std::endl;
+                break; // stop after first match
+            }
+        }
     }
     return IDsum;
 }
@@ -123,22 +99,16 @@ int main()
 {
 
     // Print
-    auto instructies = numbers(input("input/testinput"));
+    auto instructies = numbers(read_input("input/input"));
     // std::cout << "Read " << instructies.size() << " instructions\n";
 
-    /*     for (const auto &s : instructies)
-        {
-            std::cout << s << std::endl;
-        } */
+    // for (const auto &s : instructies)
+    //     std::cout << s << std::endl;
 
-    std::int64_t answer1 = part1(instructies);
-    std::cout << answer1 << std::endl;
+    long answer1 = part1(instructies);
+    std::cout << "Part 1: " << answer1 << std::endl;
 
-    // int answer2 = part2(instructies);
-    // std::cout << answer2 << " keer langs 0 gekomen" << std::endl;
+    long answer2 = part2(instructies);
+    std::cout << "Part 2: " << answer2 << std::endl;
     return 0;
 }
-
-111 3 121212 10101 6 123123123 1001001 9
-
-    22 11 2 1212 101 4 123123 1001 6
