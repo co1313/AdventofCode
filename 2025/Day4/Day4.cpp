@@ -2,13 +2,12 @@
 #include <fstream>
 #include <vector>
 #include <cassert>
-#include <cmath>
-#include <array>
 
 using Strings = std::vector<std::string>;
 using Boolgrid = std::vector<std::vector<bool>>;
 using Intgrid = std::vector<std::vector<int>>;
 
+// Read input lines from a file
 Strings read_input(const std::string &filename)
 {
     std::ifstream in(filename + ".txt");
@@ -21,13 +20,16 @@ Strings read_input(const std::string &filename)
 
     return lines;
 }
-Boolgrid at_mask(const Strings &instructions)
+
+// Convert lines to a boolean grid where '@' is true
+Boolgrid at_mask(const Strings &lines)
 {
     Boolgrid mask;
 
-    for (const auto &str : instructions)
+    for (const auto &str : lines)
     {
         std::vector<bool> row;
+        row.reserve(lines.size());
         for (char c : str)
         {
             row.push_back(c == '@');
@@ -38,12 +40,13 @@ Boolgrid at_mask(const Strings &instructions)
     return mask;
 }
 
+// Count adjacent '@'s for each cell
 Intgrid find_adjacent(const Boolgrid &rolls)
 {
     size_t rows = rolls.size();
     size_t columns = rolls[0].size();
-
     Intgrid adjacent(rows, std::vector<int>(columns, 0));
+
     for (size_t i = 0; i < rows; ++i)
     {
         for (size_t j = 0; j < columns; ++j)
@@ -67,21 +70,24 @@ Intgrid find_adjacent(const Boolgrid &rolls)
     return adjacent;
 }
 
-int part1(const Intgrid &adj_rolls, const Boolgrid &rolls)
+// Count safe '@'s (less than 4 adjacent)
+int part1(const Boolgrid &rolls)
 {
     int result = 0;
+    Intgrid adj = find_adjacent(rolls);
     for (size_t i = 0; i < rolls.size(); ++i)
     {
         for (size_t j = 0; j < rolls[i].size(); ++j)
         {
-            if (adj_rolls[i][j] < 4 && rolls[i][j])
+            if (adj[i][j] < 4 && rolls[i][j])
                 ++result;
         }
     }
     return result;
 }
 
-int part2(Boolgrid rolls)
+// Count total '@'s removed iteratively
+int part2(const Boolgrid &rolls)
 {
     int result = 0;
     Boolgrid current = rolls;
@@ -89,7 +95,6 @@ int part2(Boolgrid rolls)
     while (true)
     {
         Intgrid adj = find_adjacent(current);
-        Boolgrid next = current;
         int result_last_round = result;
 
         for (size_t i = 0; i < current.size(); ++i)
@@ -99,13 +104,12 @@ int part2(Boolgrid rolls)
                 if (adj[i][j] < 4 && current[i][j])
                 {
                     ++result;
-                    current[i][j] = 0;
+                    current[i][j] = false;
                 }
             }
         }
         if (result_last_round == result)
             break;
-        rolls = current;
     }
     return result;
 }
@@ -114,15 +118,13 @@ int main()
 {
     // Print
     const auto input = read_input("input/input");
+    const auto at_locations = at_mask(input);
 
     // for (const auto &s : input)
     //     std::cout << s << std::endl;
 
-    const auto at_locations = at_mask(input);
-    int answer1 = part1(find_adjacent(at_locations), at_locations);
-    std::cout << "Part 1: " << answer1 << std::endl;
+    std::cout << "Part 1: " << part1(at_locations) << "\n";
+    std::cout << "Part 2: " << part2(at_locations) << "\n";
 
-    int answer2 = part2(at_locations);
-    std::cout << "Part 2: " << answer2 << std::endl;
     return 0;
 }
