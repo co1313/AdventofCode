@@ -2,10 +2,18 @@
 #include <fstream>
 #include <vector>
 #include <cassert>
+#include <string>
+#include <algorithm>
+
+struct Range
+{
+    long min;
+    long max;
+};
 
 using Strings = std::vector<std::string>;
 using Longs = std::vector<long>;
-using Longrid = std::vector<Longs>;
+using Ranges = std::vector<Range>;
 
 // Read input lines from a file with space between
 Strings read_input(const std::string &filename)
@@ -21,59 +29,61 @@ Strings read_input(const std::string &filename)
 }
 
 // Convert stringranges into long array with begin/end of range in every row
-Longrid build_ranges(const Strings &rangelines)
+Ranges build_ranges(const Strings &rangelines)
 {
-    Longrid ranges;
+    Ranges ranges;
+
     for (const auto &str : rangelines)
     {
-        std::vector<long> row;
-        row.reserve(rangelines.size());
-        row[0] = std::stol(str);
-        int dash_location = std::find(str.begin(), str.end(), '-');
-        row[1] = std::stol(str.substr(dash_location + 1));
-        ranges.push_back(row);
+        auto dash = str.find('-');
+        assert(dash != std::string::npos);
+
+        ranges.push_back({std::stol(str.substr(0, dash)),
+                          std::stol(str.substr(dash + 1))});
     }
     return ranges;
 }
 
-Strings slice_vector(const Strings &vec, int start, int end)
-{
-    return Strings(vec.begin() + start, vec.begin() + end);
-}
-
 int part1(const Strings &lines)
 {
-    int emptyline = std::find(lines.begin(), lines.end(), "");
-    Strings rangelines = slice_vector(lines, 0, emptyline - 1);
-    Longrid ranges = build_ranges(rangelines);
-    Strings ingredients = slice_vector(lines, emptyline + 1, static_cast<int>(lines.end()));
-    // needs to be converted to Longs
+    auto emptyline = std::find(lines.begin(), lines.end(), "");
+    assert(emptyline != lines.end());
 
-    int result;
+    Strings rangelines(lines.begin(), emptyline);
+    Strings ingredientlines(emptyline + 1, lines.end());
 
-    for (const auto ingredient : ingredients)
+    Ranges ranges = build_ranges(rangelines);
+
+    Longs ingredients;
+    for (const auto &str : ingredientlines)
+        ingredients.push_back(std::stol(str));
+
+    int result = 0;
+
+    for (const auto &ingredient : ingredients)
     {
-        std::vector<long> row;
-        row.reserve(ranges.size());
-        for (row : ranges)
+        for (const auto &row : ranges)
         {
-            if (ingredient >= row[0] && ingredient <= row[1])
+            if (ingredient >= row.min && ingredient <= row.max)
+            {
                 ++result;
-            break;
+                break;
+            }
         }
     }
+
     return result;
 }
 
 int main()
 {
     // Print
-    const auto input = read_input("input/testinput");
+    const auto input = read_input("input/input");
 
     // for (const auto &s : input)
     //     std::cout << s << std::endl;
 
-    std::cout << "Part 1: " << part1(read_input) << "\n";
+    std::cout << "Part 1: " << part1(input) << "\n";
     // std::cout << "Part 2: " << part2(at_locations) << "\n";
 
     return 0;
