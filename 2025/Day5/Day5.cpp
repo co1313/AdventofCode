@@ -75,6 +75,56 @@ int part1(const Strings &lines)
     return result;
 }
 
+Ranges mergeOverlappingRanges(const Ranges &ranges)
+{
+    Ranges merged;
+    merged.push_back(ranges.front());
+
+    for (size_t i = 1; i < ranges.size(); ++i)
+    {
+        Range &last = merged.back();
+        const Range &current = ranges[i];
+
+        if (current.min <= last.max)
+        {
+            last.max = std::max(last.max, current.max);
+        }
+        else
+        {
+            merged.push_back(current);
+        }
+    }
+
+    return merged;
+}
+
+Ranges normalizeRanges(Ranges &ranges)
+{
+    std::sort(ranges.begin(), ranges.end(),
+              [](const Range &a, const Range &b)
+              {
+                  return a.min < b.min;
+              });
+
+    ranges = mergeOverlappingRanges(ranges);
+    return ranges;
+}
+
+long part2(const Strings &lines)
+{
+    auto emptyline = std::find(lines.begin(), lines.end(), "");
+    assert(emptyline != lines.end());
+
+    Strings rangelines(lines.begin(), emptyline);
+    Strings ingredientlines(emptyline + 1, lines.end());
+
+    Ranges ranges = build_ranges(rangelines);
+    Ranges merged = normalizeRanges(ranges);
+    long fresh = 0;
+    for (const auto &range : merged)
+        fresh += range.max - range.min + 1;
+    return fresh;
+}
 int main()
 {
     // Print
@@ -84,7 +134,7 @@ int main()
     //     std::cout << s << std::endl;
 
     std::cout << "Part 1: " << part1(input) << "\n";
-    // std::cout << "Part 2: " << part2(at_locations) << "\n";
+    std::cout << "Part 2: " << part2(input) << "\n";
 
     return 0;
 }
