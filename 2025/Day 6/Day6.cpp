@@ -6,6 +6,7 @@
 #include <algorithm>
 #include <sstream>
 #include <numeric>
+
 using Strings = std::vector<std::string>;
 using Longs = std::vector<long>;
 
@@ -36,32 +37,29 @@ Strings remove_spaces(const std::string &line)
     return spaceless_line;
 }
 
-long op(long a, long b)
+long calculate_problem(Strings &column)
 {
-    return a * b;
-}
-
-long calculate_problem(Strings column)
-{
-    char symbol;
+    char symbol = '+';
     if (!column.empty())
     {
         symbol = column.back()[0];
         column.pop_back();
     }
+
     Longs problem(column.size());
     std::transform(column.begin(), column.end(), problem.begin(),
                    [](const std::string &s)
-                   { return std::stol(s); });
+                   { return std::stoll(s); });
 
-    long solution;
+    long solution = 0;
     if (symbol == '+')
     {
-        solution = std::accumulate(problem.begin(), problem.end(), 0);
+        solution = std::accumulate(problem.begin(), problem.end(), 0L);
     }
     else if (symbol == '*')
     {
-        solution = std::accumulate(problem.begin(), problem.end(), 1, op);
+        solution = std::accumulate(problem.begin(), problem.end(), 1L, [](long a, long b)
+                                   { return a * b; });
     }
     return solution;
 }
