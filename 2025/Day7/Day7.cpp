@@ -3,12 +3,10 @@
 #include <vector>
 #include <cassert>
 #include <string>
-#include <algorithm>
-#include <sstream>
 #include <numeric>
 
 using Strings = std::vector<std::string>;
-using Ints = std::vector<int>;
+using BeamPositions = std::vector<int>;
 
 // Read input lines from a file
 Strings read_input(const std::string &filename)
@@ -23,66 +21,76 @@ Strings read_input(const std::string &filename)
     return lines;
 }
 
-Ints adjust_row(const Ints &previous_beam_positions, std::string &row, int &split_count)
+BeamPositions process_row(const BeamPositions &previous_beam_positions, std::string &row, int &split_count)
 {
-    Ints beam_postions;
+    BeamPositions beam_positions;
     for (const auto &beam : previous_beam_positions)
     {
-        if (row[beam] == '|')
+        char &cell = row[beam];
+
+        if (beam < 0 || beam >= static_cast<int>(row.size()))
         {
             continue;
         }
 
-        if (row[beam] == '.')
+        if (cell == '|')
         {
-            row[beam] = '|';
-            beam_postions.push_back(beam);
+            continue;
         }
-        else if (row[beam] == '^')
+
+        if (cell == '.')
+        {
+            cell = '|';
+            beam_positions.push_back(beam);
+        }
+        else if (cell == '^')
         {
             ++split_count;
             if (beam > 0)
             {
                 row[beam - 1] = '|';
-                if (beam_postions.empty() || beam_postions.back() != beam - 1)
+                if (beam_positions.empty() || beam_positions.back() != beam - 1)
                 {
-                    beam_postions.push_back(beam - 1);
+                    beam_positions.push_back(beam - 1);
                 }
             }
-            if (beam < row.size() - 1)
+            if (beam + 1 < row.size())
             {
                 row[beam + 1] = '|';
-                beam_postions.push_back(beam + 1);
+                beam_positions.push_back(beam + 1);
             }
         }
     }
-    return beam_postions;
+    return beam_positions;
 }
 
 int part1(const Strings &lines)
 {
     int split_count = 0;
     Strings manifold = lines;
-    Ints beam_positions;
-    beam_positions.push_back(lines[0].find("S"));
+    BeamPositions beam_positions;
+
+    auto start = lines[0].find('S');
+    assert(start != std::string::npos && "Start position 'S' not found");
+    beam_positions.push_back(static_cast<int>(start));
+
     for (size_t row = 1; row < manifold.size(); ++row)
     {
-        beam_positions = adjust_row(beam_positions, manifold[row], split_count);
-        for (const auto &s : manifold)
-            std::cout << s << std::endl;
+        beam_positions = process_row(beam_positions, manifold[row], split_count);
     }
     return split_count;
 }
+
 int main()
 {
     // Print
-    const auto input = read_input("input/input");
+    const auto input = read_input("input/testinput");
 
     // for (const auto &s : input)
     //     std::cout << s << std::endl;
 
     std::cout << "Part 1: " << part1(input) << "\n";
-    // std::cout << "Part 2: " << part2(input) << "\n";
+    std::cout << "Part 2: " << part2(input) << "\n";
 
     return 0;
 }
