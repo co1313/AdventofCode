@@ -22,18 +22,19 @@ Strings read_input(const std::string &filename)
     return lines;
 }
 
-BeamPositions process_row(const BeamPositions &previous_beam_positions, std::string &row, int &split_count, Timelines &timelines)
+BeamPositions advance_beams(const BeamPositions &previous, std::string &row, int &split_count, Timelines &timelines)
 {
-    BeamPositions beam_positions;
+    BeamPositions new_positions;
+    const int width = static_cast<int>(row.size());
 
-    for (const auto &beam : previous_beam_positions)
+    for (const auto &beam : previous)
     {
-        if (beam < 0 || beam >= static_cast<int>(row.size()))
+        if (beam < 0 || beam >= width)
         {
             continue;
         }
-        char &cell = row[beam];
 
+        char &cell = row[beam];
         if (cell == '|')
         {
             continue;
@@ -42,64 +43,76 @@ BeamPositions process_row(const BeamPositions &previous_beam_positions, std::str
         if (cell == '.')
         {
             cell = '|';
-            beam_positions.push_back(beam);
+            new_positions.push_back(beam);
         }
         else if (cell == '^')
         {
             ++split_count;
+
             if (beam > 0)
             {
                 timelines[beam - 1] += timelines[beam];
                 row[beam - 1] = '|';
-                beam_positions.push_back(beam - 1);
+                new_positions.push_back(beam - 1);
             }
-            if (beam + 1 < row.size())
+            if (beam + 1 < width)
             {
                 timelines[beam + 1] += timelines[beam];
                 row[beam + 1] = '|';
-                beam_positions.push_back(beam + 1);
+                new_positions.push_back(beam + 1);
             }
 
             timelines[beam] = 0;
         }
     }
-    return beam_positions;
+    return new_positions;
+}
+
+int find_start(const Strings &lines)
+{
+    auto pos = lines[0].find('S');
+    assert(pos != std::string::npos);
+    return static_cast<int>(pos);
+}
+
+void run_simulation(const Strings &lines, BeamPositions &beam_positions, Strings &manifold, int &split_count, Timelines &timelines)
+{
+    for (size_t row = 1; row < manifold.size(); ++row)
+    {
+        beam_positions = advance_beams(beam_positions, manifold[row], split_count, timelines);
+    }
 }
 
 int part1(const Strings &lines)
 {
     int split_count = 0;
     Strings manifold = lines;
+
     BeamPositions beam_positions;
     Timelines dummy_timelines(lines[0].size(), 0);
 
-    auto start = lines[0].find('S');
-    assert(start != std::string::npos && "Start position 'S' not found");
-    beam_positions.push_back(static_cast<int>(start));
+    int start = find_start(lines);
+    beam_positions.push_back(start);
 
-    for (size_t row = 1; row < manifold.size(); ++row)
-    {
-        beam_positions = process_row(beam_positions, manifold[row], split_count, dummy_timelines);
-    }
+    run_simulation(lines, beam_positions, manifold, split_count, dummy_timelines);
+
     return split_count;
 }
 
 long part2(const Strings &lines)
 {
     int split_count = 0;
-    Timelines timelines(lines[0].size(), 0);
     Strings manifold = lines;
-    BeamPositions beam_positions;
 
-    auto start = lines[0].find('S');
-    assert(start != std::string::npos && "Start position 'S' not found");
-    beam_positions.push_back(static_cast<int>(start));
+    BeamPositions beam_positions;
+    Timelines timelines(lines[0].size(), 0);
+
+    int start = find_start(lines);
+    beam_positions.push_back(start);
     timelines[start] = 1;
 
-    for (size_t row = 1; row < manifold.size(); ++row)
-    {
-        beam_positions = process_row(beam_positions, manifold[row], split_count, timelines);
-    }
+    run_simulation(lines, beam_positions, manifold, split_count, timelines);
+
     return std::accumulate(timelines.begin(), timelines.end(), 0L);
 }
 
