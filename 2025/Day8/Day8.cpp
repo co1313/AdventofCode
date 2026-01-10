@@ -67,7 +67,7 @@ void merge_and_remove(Circuits &v, std::size_t i, std::size_t j)
     v.erase(v.begin() + j);
 }
 
-Pairs find_n_shortest_connections(const Boxes &grid, std::size_t n)
+Pairs find_shortest_connections(const Boxes &grid)
 {
     using Entry = std::pair<int, std::pair<std::size_t, std::size_t>>;
     std::vector<Entry> all_pairs;
@@ -77,17 +77,11 @@ Pairs find_n_shortest_connections(const Boxes &grid, std::size_t n)
         for (size_t c = r + 1; c < N; ++c)
             all_pairs.push_back({grid[r][c], {r, c}});
 
-    if (all_pairs.size() > n)
-        std::partial_sort(all_pairs.begin(), all_pairs.begin() + n, all_pairs.end(),
-                          [](const Entry &a, const Entry &b)
-                          { return a.first < b.first; });
-    else
-        std::sort(all_pairs.begin(), all_pairs.end(),
-                  [](const Entry &a, const Entry &b)
-                  { return a.first < b.first; });
-
+    std::sort(all_pairs.begin(), all_pairs.end(),
+              [](const Entry &a, const Entry &b)
+              { return a.first < b.first; });
     Pairs result;
-    for (size_t i = 0; i < n && i < all_pairs.size(); ++i)
+    for (size_t i = 0; i < all_pairs.size(); ++i)
         result.push_back(all_pairs[i].second);
 
     return result;
@@ -95,8 +89,11 @@ Pairs find_n_shortest_connections(const Boxes &grid, std::size_t n)
 
 void merge_circuits(const Boxes &grid, Circuits &circuits, std::size_t connections)
 {
-    Pairs lowest = find_n_shortest_connections(grid, connections);
-
+    Pairs lowest = find_shortest_connections(grid);
+    if (connections > 0)
+    {
+        lowest.resize(connections);
+    }
     for (auto [a, b] : lowest)
     {
         std::size_t idx_a = circuits.size();
@@ -110,6 +107,34 @@ void merge_circuits(const Boxes &grid, Circuits &circuits, std::size_t connectio
                 idx_b = i;
         }
 
+        if (idx_a != idx_b)
+            merge_and_remove(circuits, idx_a, idx_b);
+    }
+}
+
+Pairs merge_all_circuits(const Boxes &grid, Circuits &circuits)
+{
+    Pairs final_connection;
+    Pairs lowest = find_shortest_connections(grid);
+
+    for (auto [a, b] : lowest)
+    {
+        std::size_t idx_a = circuits.size();
+        std::size_t idx_b = circuits.size();
+
+        for (std::size_t i = 0; i < circuits.size(); ++i)
+        {
+            if (circuits[i].count(a))
+                idx_a = i;
+            if (circuits[i].count(b))
+                idx_b = i;
+        }
+        if (circuits.size() == 2 && idx_a != idx_b)
+        {
+            std::pair<std::size_t, std::size_t> final_pair = {a, b};
+            final_connection.push_back(final_pair);
+            return final_connection;
+        }
         if (idx_a != idx_b)
             merge_and_remove(circuits, idx_a, idx_b);
     }
@@ -140,6 +165,19 @@ int part1(const Boxes &junction_boxes, std::size_t connections)
     return static_cast<int>(product_of_largest_3_sets(circuits));
 }
 
+int part2(const Boxes &junction_boxes)
+{
+    Boxes grid = create_distancegrid(junction_boxes);
+
+    Circuits circuits;
+    for (std::size_t i = 0; i < junction_boxes.size(); ++i)
+        circuits.push_back({static_cast<int>(i)});
+
+    Pairs final_connection = merge_all_circuits(grid, circuits);
+
+    return junction_boxes[final_connection[0].first][0] * junction_boxes[final_connection[0].second][0];
+}
+
 int main()
 {
     // Print
@@ -158,7 +196,7 @@ int main()
     // }
 
     std::cout << "Part 1 with " << connections << " connections: " << part1(input, connections) << "\n";
-    // std::cout << "Part 2: " << part2(input) << "\n";
+    std::cout << "Part 2: " << part2(input) << "\n";
 
     return 0;
 }
